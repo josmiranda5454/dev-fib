@@ -8,21 +8,65 @@
 
 MODULE_LICENSE("GPL");
 #define DEV_FIBONACCI_NAME "fibonacci"
+#define MAX_LENGTH 1024
 
-// Global static variables to be used throughout
+// Global static variables to be used throughout journey
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 
 // static functions that will be used by the file_operations structure
-static ssize_t fib_read(struct file *file, char __user *user_buffer, size_t size, loff_t *offset)
-{
+static int fib_open(struct inode *inode, struct file *file) {
+    printk(KERN_INFO "Got an open, success!");
     return 0;
+}
+static int fib_release(struct inode *inode, struct file *file) {
+    printk(KERN_INFO "Got a release, success!");
+    return 0;
+}
+static ssize_t fib_read(struct file *file, char *buf, size_t size, loff_t *offset)
+{
+    printk("Got a read, let's calculate the fibonacci number at that offset, %lld", *offset);
+    return *offset;
+}
+
+static ssize_t fib_write(struct file *file, const char *buf, size_t size, loff_t *offset)
+{
+    printk(KERN_INFO "Got a write, but we are skipping");
+    return size;
+}
+
+// In order for the offset to work we need to actually
+// implement it
+// Taken from https://sites.google.com/site/linuxkernel88/sample-code/writing-a-character-driver
+// TODO: What is the MAX_LENGTH in order to be conscious about constraints
+static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
+{
+    loff_t new_pos=0;
+    switch( orig ) {
+        case 0: /* SEEK_SET: */
+            new_pos = offset;
+            break;
+        case 1: /* SEEK_CUR: */
+            new_pos = file->f_pos + offset;
+            break;
+        case 2: /* SEEK_END: */
+            new_pos = MAX_LENGTH - offset;
+            break;
+        }
+    if( new_pos > MAX_LENGTH ) new_pos = MAX_LENGTH; // max case
+    if( new_pos < 0 ) new_pos = 0; // min case
+    file->f_pos = new_pos; // This is what we'll use now
+    return new_pos;
 }
 
 const struct file_operations fib_fops = {
     .owner = THIS_MODULE,
     .read = fib_read,
+    .write = fib_write,
+    .open = fib_open,
+    .release = fib_release,
+    .llseek = fib_device_lseek,
 };
 
 static int __init init_fib_dev(void) {
