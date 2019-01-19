@@ -15,6 +15,20 @@ static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 
+
+static long long fib_sequence(long long k) {
+    long long f[k+2];
+    int i;
+
+    f[0] = 0;
+    f[1] = 1;
+
+    for (i = 2; i <= k; i++) {
+        f[i] = f[i-1] + f[i-2];
+    }
+
+    return f[k];
+}
 // static functions that will be used by the file_operations structure
 static int fib_open(struct inode *inode, struct file *file) {
     printk(KERN_INFO "Got an open, success!");
@@ -27,7 +41,7 @@ static int fib_release(struct inode *inode, struct file *file) {
 static ssize_t fib_read(struct file *file, char *buf, size_t size, loff_t *offset)
 {
     printk("Got a read, let's calculate the fibonacci number at that offset, %lld", *offset);
-    return *offset;
+    return (ssize_t)fib_sequence(*offset);
 }
 
 static ssize_t fib_write(struct file *file, const char *buf, size_t size, loff_t *offset)
