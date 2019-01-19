@@ -17,4 +17,6 @@ load:
 	insmod ./$(TARGET_MODULE).ko
 unload:
 	rmmod ./$(TARGET_MODULE).ko
+client:
+	gcc -o client fib_client.c
 endif
