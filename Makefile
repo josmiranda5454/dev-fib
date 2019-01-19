@@ -1,3 +1,4 @@
+CONFIG_MODULE_SIG=n
 TARGET_MODULE:=dev-fib
 # If we are running by kernel building system
 ifneq ($(KERNELRELEASE),)
