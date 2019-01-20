@@ -46,7 +46,7 @@ static ssize_t fib_read(struct file *file, char *buf, size_t size, loff_t *offse
 static ssize_t fib_write(struct file *file, const char *buf, size_t size, loff_t *offset)
 {
     printk(KERN_INFO "Got a write, but we are skipping");
-    return size;
+    return 1;
 }
 
 // In order for the offset to work we need to actually
