@@ -13,6 +13,7 @@ all:
 clean:
 # run kernel build system to cleanup in current directory
 	$(MAKE) -C $(BUILDSYSTEM_DIR) M=$(PWD) clean
+	rm ./client
 load:
 	insmod ./$(TARGET_MODULE).ko
 unload:

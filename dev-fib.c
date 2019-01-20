@@ -15,7 +15,6 @@ static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 
-
 static long long fib_sequence(long long k) {
     long long f[k+2];
     int i;
@@ -94,42 +93,45 @@ static int __init init_fib_dev(void) {
 
     if (rc < 0) {
         printk(KERN_ALERT "Failed to register the fibonacci char device. rc = %i", rc);
-        return -1;
+        return rc;
     }
 
     fib_cdev = cdev_alloc();
     if (fib_cdev == NULL) {
         printk(KERN_ALERT "Failed to alloc cdev");
-        unregister_chrdev_region(fib_dev, 1);
-        return -1;
+        rc = -1;
+        goto failed_cdev;
     }
     cdev_init(fib_cdev, &fib_fops);
-
     rc = cdev_add(fib_cdev, fib_dev, 1);
+ 
     if (rc < 0) {
-        printk(KERN_ALERT "Failed to alloc cdev");
-        unregister_chrdev_region(fib_dev, 1);
-        return -1;
+        printk(KERN_ALERT "Failed to add cdev");
+        rc = -2;
+        goto failed_cdev;
     }
 
     fib_class = class_create(THIS_MODULE, DEV_FIBONACCI_NAME);
 
     if (!fib_class) {
-        printk(KERN_ALERT "Failed to alloc cdev");
-        cdev_del(fib_cdev);
-        unregister_chrdev_region(fib_dev, 1);
-        return -1;
+        printk(KERN_ALERT "Failed to create device class");
+        rc = -3;
+        goto failed_class_create;
     }
 
     if (!device_create(fib_class, NULL, fib_dev, NULL, DEV_FIBONACCI_NAME)) {
-        printk(KERN_ALERT "Failed to alloc cdev");
-        class_destroy(fib_class);
-        cdev_del(fib_cdev);
-        unregister_chrdev_region(fib_dev, 1);
-        return -1;
+        printk(KERN_ALERT "Failed to create device");
+        rc = -4;
+        goto failed_device_create;
     }
-
-    return 0;
+    return rc;
+failed_device_create:
+    class_destroy(fib_class);
+failed_class_create:
+    cdev_del(fib_cdev);
+failed_cdev:
+    unregister_chrdev_region(fib_dev, 1);
+    return rc;
 }
 
 static void __exit exit_fib_dev(void) {
