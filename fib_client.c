@@ -9,23 +9,37 @@ int main () {
 
     char buf [1];
     char write_buf[] = "testing writing";
-    int offset = 89;
+    int offset = 100; // Let's test something bigger than the limit
+    int i = 0;
     
     fd = open("/dev/fibonacci", O_RDWR);
 
-    lseek(fd, offset, SEEK_SET);
-    sz = read(fd, buf, 1);
+    if (fd < 0) {
+        perror("Failed to open character device");
+        exit(1);
+    }
 
-    printf("Reading from /dev/fibonacci at offset %d, returned the sequence %lld.\n", offset, sz);
+    for (i = 0; i <= offset ; i++) {
+        sz = write(fd, write_buf, strlen(write_buf));
+        printf("Writing to /dev/fibonacci, returned the sequence %lld\n", sz);
+    }   
 
-    sz = write(fd, write_buf, strlen(write_buf));
-    printf("Writing to /dev/fibonacci, returned the sequence %lld\n", sz);
+    for (i = 0; i <= offset ; i++)
+    {
+        lseek(fd, i, SEEK_SET);
+        sz = read(fd, buf, 1);
+        printf("Reading from /dev/fibonacci at offset %d, returned the sequence %lld.\n", i, sz);
+    }
+
+    printf("Let's go backwards\n");
     
-    sz = read(fd, buf, 1);
+    for (i = offset; i >= 0 ; i--)
+    {
+        lseek(fd, i, SEEK_SET);
+        sz = read(fd, buf, 1);
+        printf("Reading from /dev/fibonacci at offset %d, returned the sequence %lld.\n", i, sz);
+    }
 
-    printf("Reading from /dev/fibonacci at offset %d, returned the sequence %lld.\n", offset, sz);
-    
     close(fd);
-    
     return 0;
 }
