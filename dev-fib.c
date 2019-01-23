@@ -8,7 +8,10 @@
 
 MODULE_LICENSE("GPL");
 #define DEV_FIBONACCI_NAME "fibonacci"
-#define MAX_LENGTH 1024
+/* MAX_LENGTH is set to 92 because
+ * ssize_t can't fit the number > 92
+ */
+#define MAX_LENGTH 92
 
 // Global static variables to be used throughout journey
 static dev_t fib_dev = 0;
@@ -52,7 +55,6 @@ static ssize_t fib_write(struct file *file, const char *buf, size_t size, loff_t
 // In order for the offset to work we need to actually
 // implement it
 // Taken from https://sites.google.com/site/linuxkernel88/sample-code/writing-a-character-driver
-// TODO: What is the MAX_LENGTH in order to be conscious about constraints
 static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
 {
     loff_t new_pos=0;
@@ -67,6 +69,7 @@ static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
             new_pos = MAX_LENGTH - offset;
             break;
         }
+    // Check boundaries
     if( new_pos > MAX_LENGTH ) new_pos = MAX_LENGTH; // max case
     if( new_pos < 0 ) new_pos = 0; // min case
     file->f_pos = new_pos; // This is what we'll use now
