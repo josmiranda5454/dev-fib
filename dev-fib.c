@@ -5,6 +5,7 @@
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
+#include <linux/mutex.h>
 
 MODULE_LICENSE("GPL");
 #define DEV_FIBONACCI_NAME "fibonacci"
@@ -17,6 +18,7 @@ MODULE_LICENSE("GPL");
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
+static DEFINE_MUTEX(dev_fib_mutex);
 
 static long long fib_sequence(long long k) {
     long long f[k+2];
@@ -33,10 +35,15 @@ static long long fib_sequence(long long k) {
 }
 // static functions that will be used by the file_operations structure
 static int fib_open(struct inode *inode, struct file *file) {
+    if (!mutex_trylock(&dev_fib_mutex)){
+        printk(KERN_ALERT "dev-fib is in use");
+	return -EBUSY;
+    }
     printk(KERN_INFO "Got an open, success!");
     return 0;
 }
 static int fib_release(struct inode *inode, struct file *file) {
+    mutex_unlock(&dev_fib_mutex);
     printk(KERN_INFO "Got a release, success!");
     return 0;
 }
@@ -87,6 +94,8 @@ const struct file_operations fib_fops = {
 
 static int __init init_fib_dev(void) {
     int rc = 0;
+
+    mutex_init(&dev_fib_mutex);
 
     printk(KERN_INFO "Initializing the fibonacci device");
 
@@ -139,6 +148,7 @@ failed_cdev:
 
 static void __exit exit_fib_dev(void) {
     printk(KERN_INFO "Exiting and releasing the fibonnaci device");
+    mutex_destroy(&dev_fib_mutex);
     device_destroy(fib_class, fib_dev);
     class_destroy(fib_class);
     cdev_del(fib_cdev);
